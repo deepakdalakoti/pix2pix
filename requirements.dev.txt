@@ -1,0 +1,8 @@
+torch==1.13.1
+torchvision==0.14.1
+tensorboard==2.10.0
+jupyterlab==3.6.1
+scipy==1.10.0
+pandas==1.5.3
+jupyter_contrib_nbextensions
+mlflow==2.1.1

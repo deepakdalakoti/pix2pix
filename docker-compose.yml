@@ -1,0 +1,86 @@
+version: '3.8'
+
+x-environment-common: &environment-common
+  # General app settings
+  DATA_PATH: ${DATA_PATH:?data_path}/${LAN_ID:?lan_id}
+  PROJECT_PATH: ${PROJECT_PATH:?project_path}
+  LOG_DIR: ${LOG_DIR:?log_dir}/${LAN_ID:?lan_id}
+  MLFLOW_TRACKING_URI: file:///data/mlruns
+
+
+services:
+
+  notebook:
+    image: ${IMAGE_NAME:?image_name}/${IMAGE_VERSION:?image_version}
+    container_name: notebook-pix2pix-${LAN_ID:?lan_id}
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        PROJECT_PATH: ${PROJECT_PATH:?project_path}
+    ports:
+      - ${NOTEBOOK_PORT:?notebook_port}:${INTERNAL_PORT:?internal_port}
+    volumes:
+      - ./:${PROJECT_PATH:?project_path}
+      - ${DATA_PATH:?data_path}/${LAN_ID:?lan_id}:/data
+    environment:
+      <<: *environment-common
+    command: ["jupyter", "notebook", "--allow-root", "--no-browser", "--ip", "0.0.0.0", "--port", $INTERNAL_PORT, "--NotebookApp.token", $NOTEBOOK_TOKEN ]
+
+  app:
+    image: ${IMAGE_NAME:?image_name}/${IMAGE_VERSION:?image_version}
+    container_name: app-pix2pix-${LAN_ID:?lan_id}
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        PROJECT_PATH: ${PROJECT_PATH:?project_path}
+    volumes:
+      - ./:${PROJECT_PATH:?project_path}
+      - ${DATA_PATH:?data_path}/${LAN_ID:?lan_id}:/data
+    environment:
+      <<: *environment-common
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: "all"
+              capabilities: [gpu]
+    command: ["tail","-f","/dev/null" ]
+
+  logs:
+    image: ${IMAGE_NAME:?image_name}/${IMAGE_VERSION:?image_version}
+    container_name: logs-pix2pix-${LAN_ID:?lan_id}
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        PROJECT_PATH: ${PROJECT_PATH:?project_path}
+    ports:
+      - ${TENSORBOARD_PORT:?notebook_port}:${INTERNAL_PORT:?internal_port}
+    volumes:
+      - ./:${PROJECT_PATH:?project_path}
+      - ${LOG_DIR:?log_dir}/${LAN_ID:?lan_id}/logs:/logs
+    working_dir: /logs
+    command: ["tensorboard","--logdir", "/logs","--port", $INTERNAL_PORT, "--host", "0.0.0.0"]
+
+  mlflow:
+    image: ${IMAGE_NAME:?image_name}/${IMAGE_VERSION:?image_version}
+    container_name: mlflow-pix2pix-${LAN_ID:?lan_id}
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        PROJECT_PATH: ${PROJECT_PATH:?project_path}
+    ports:
+      - ${ML_FLOW_PORT:?ml_flow_port}:${INTERNAL_PORT:?internal_port}
+    volumes:
+      - ./:${PROJECT_PATH:?project_path}
+      - ${DATA_PATH:?data_path}/${LAN_ID:?lan_id}:/data
+    environment:
+      <<: *environment-common
+    working_dir: /data
+    command: ["mlflow","ui", "-h", "0.0.0.0", "-p", $INTERNAL_PORT]
+
+
