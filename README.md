@@ -14,11 +14,7 @@ Type `make up` to stand up the containers. Make sure to fill and copy `default_e
 3. logs-pix2pix: A container which runs tensorboard for tracking training.
 4. mlflow-pix2pix: A container which runs mlflow ui for tracking/versioning model. By default all logs are saved to file in a bind volume mounted in containers which persists data even if containers are removed.
 
-For uniqueness, users' LAN ID is appended to the end of the containers names.
-
 Very minimal libraries are installed by default. It's left to users to install additional libraries as required.
-
-Note: If running on cluster, forward relevant ports (as defined in .env file) to access notebook and tensorboard.
 
 An example script is provided on how to use mlflow (`src/mlflow_example.py`). By default mlflow will write in /data directory which is mounted in the container. 
 
